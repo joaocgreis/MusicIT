@@ -6,12 +6,16 @@ import Sound.ALUT
 
 
 
+-- Expect range C0 - B8, -57 - 50
+type Note = Int
+
+
 fA4 :: Frequency
 fA4 = 440
 
 -- fn = fA4 * (a)^n
 -- a = 2 ^ (1/12)
-freq :: Integral b => b -> Frequency
+freq :: Note -> Frequency
 freq n = fA4 * (1.059463094359 ^^ n)
 
 
@@ -23,52 +27,63 @@ playTone dur hz = do
    play [source]
    sleep 1
 
-rollNote :: IO Int
-rollNote = getStdRandom (randomR (-9,2))
+roll :: Random a => a -> a -> IO a
+roll f l = getStdRandom (randomR (f,l))
 
-nameNote :: Integral a => a -> String
+rollNote :: Int -> IO Note
+rollNote range = roll base $ base+range
+  where base = -(range `div` 2)
+
+nameNote :: Note -> String
 nameNote (-9) = "Dó"
-nameNote (-8) = "Dó #"
 nameNote (-7) = "Ré"
-nameNote (-6) = "Ré #"
 nameNote (-5) = "Mi"
 nameNote (-4) = "Fá"
-nameNote (-3) = "Fá #"
 nameNote (-2) = "Sol"
-nameNote (-1) = "Sol #"
 nameNote 0 = "Lá"
-nameNote 1 = "Lá #"
 nameNote 2 = "Si"
 nameNote n | n > 2 = nameNote $ n - 12 
-           | otherwise = nameNote $ n + 12
+           | n < (-9) = nameNote $ n + 12
+           | otherwise = nameNote (n-1) ++ " #"
 
 octaveNote :: Integral a => a -> a
 octaveNote n = (n+57) `div` 12
 
-toNote :: (Integral a, Show a) => a -> String
+toNote :: Note -> String
 toNote n = nameNote n ++ " " ++ show (octaveNote n)
 
 
+
+data MITS = MITS { labeltext :: String, notenum :: Note, noteoptions :: [Maybe Note], noterange :: Int }
+
+
+
+genoptions :: Note -> Int -> IO [Maybe Note]
+genoptions note range = do
+  let fr = if range > 11 then 11 else range
+  base <- roll (note - fr) note
+  let final = base + fr
+      list = map Just [base .. final]
+  return $ list ++ replicate (12 - length list) Nothing 
+
 main :: IO ()
-main = withProgNameAndArgs runALUT alutmain
+main = withProgNameAndArgs runALUT $ \_progName _args -> initGUI >> do
+  mapM_ (playTone 0.2 . freq) [-9, -7, -5, -4, -2, 0, 2, 3]
+  options <- genoptions 0 0
+  loopy (MITS "Welcome to MusicIT! Guess the note ;)" 0 options 0)
 
-alutmain :: String -> [String] -> IO ()
-alutmain _progName _args = initGUI >> loopy "Welcome to MusicIT! Guess the note ;)"
-
-loopy :: String -> IO ()
-loopy labeltext = do
+loopy :: MITS -> IO ()
+loopy mits = do
     builder <- builderNew
     builderAddFromFile builder "interface.glade"
     window <- builderGetObject builder castToWindow "window1"
     _ <- onDestroy window mainQuit
     
     l <- builderGetObject builder castToLabel "label1"
-    labelSetText l labeltext
-    
-    note <- rollNote
+    labelSetText l $ labeltext mits
     
     rb <- builderGetObject builder castToButton "replay_button"
-    _ <- onClicked rb $ playTone 0.2 . freq $ note
+    _ <- onClicked rb $ playTone 0.2 . freq $ notenum mits
     
     b1 <- builderGetObject builder castToButton "button1"
     b2 <- builderGetObject builder castToButton "button2"
@@ -82,40 +97,56 @@ loopy labeltext = do
     b10 <- builderGetObject builder castToButton "button10"
     b11 <- builderGetObject builder castToButton "button11"
     b12 <- builderGetObject builder castToButton "button12"
-    buttonSetLabel b1 $ toNote ((-9) :: Int)
-    buttonSetLabel b2 $ toNote ((-8) :: Int)
-    buttonSetLabel b3 $ toNote ((-7) :: Int)
-    buttonSetLabel b4 $ toNote ((-6) :: Int)
-    buttonSetLabel b5 $ toNote ((-5) :: Int)
-    buttonSetLabel b6 $ toNote ((-4) :: Int)
-    buttonSetLabel b7 $ toNote ((-3) :: Int)
-    buttonSetLabel b8 $ toNote ((-2) :: Int)
-    buttonSetLabel b9 $ toNote ((-1) :: Int)
-    buttonSetLabel b10 $ toNote (0 :: Int)
-    buttonSetLabel b11 $ toNote (1 :: Int)
-    buttonSetLabel b12 $ toNote (2 :: Int)
-    _ <- onClicked b1 $ buttonClick window (-9) note 
-    _ <- onClicked b2 $ buttonClick window (-8) note 
-    _ <- onClicked b3 $ buttonClick window (-7) note 
-    _ <- onClicked b4 $ buttonClick window (-6) note 
-    _ <- onClicked b5 $ buttonClick window (-5) note 
-    _ <- onClicked b6 $ buttonClick window (-4) note 
-    _ <- onClicked b7 $ buttonClick window (-3) note 
-    _ <- onClicked b8 $ buttonClick window (-2) note 
-    _ <- onClicked b9 $ buttonClick window (-1) note 
-    _ <- onClicked b10 $ buttonClick window 0 note 
-    _ <- onClicked b11 $ buttonClick window 1 note 
-    _ <- onClicked b12 $ buttonClick window 2 note 
+    setButtonNoteLabel b1 0 mits
+    setButtonNoteLabel b2 1 mits
+    setButtonNoteLabel b3 2 mits
+    setButtonNoteLabel b4 3 mits
+    setButtonNoteLabel b5 4 mits
+    setButtonNoteLabel b6 5 mits
+    setButtonNoteLabel b7 6 mits
+    setButtonNoteLabel b8 7 mits
+    setButtonNoteLabel b9 8 mits
+    setButtonNoteLabel b10 9 mits
+    setButtonNoteLabel b11 10 mits
+    setButtonNoteLabel b12 11 mits
+    setButtonNoteClick window b1 0 mits
+    setButtonNoteClick window b2 1 mits
+    setButtonNoteClick window b3 2 mits
+    setButtonNoteClick window b4 3 mits
+    setButtonNoteClick window b5 4 mits
+    setButtonNoteClick window b6 5 mits
+    setButtonNoteClick window b7 6 mits
+    setButtonNoteClick window b8 7 mits
+    setButtonNoteClick window b9 8 mits
+    setButtonNoteClick window b10 9 mits
+    setButtonNoteClick window b11 10 mits
+    setButtonNoteClick window b12 11 mits
     
     widgetShowAll window
     
-    playTone 0.2 . freq $ note
+    playTone 0.2 . freq $ notenum mits
     
     mainGUI
 
-buttonClick :: (Integral a, Show a) => Window -> a -> a -> IO ()
-buttonClick window note expected = do
-    widgetDestroy window
-    loopy $ if note == expected then "That is correct! It was " ++ toNote expected ++ ". Now try this one ;)"
-                                else "Wrong... It was " ++ toNote expected ++ ". Better luck with this one!" 
 
+setButtonNoteLabel :: Button -> Int -> MITS -> IO ()
+setButtonNoteLabel button number mits = buttonSetLabel button $ labelNoteDesc (noteoptions mits !! number)
+
+labelNoteDesc :: Maybe Note -> String
+labelNoteDesc (Just n) = toNote n
+labelNoteDesc Nothing = "X"
+
+setButtonNoteClick :: Window -> Button -> Int -> MITS -> IO ()
+setButtonNoteClick window button number mits = do
+  _ <- onClicked button $ if (noteoptions mits !! number) == Just (notenum mits)
+    then buttonClick window mits
+    else buttonSetLabel button "X_X" >> playTone 0.2 (freq (notenum mits))
+  return ()
+
+buttonClick :: Window -> MITS -> IO ()
+buttonClick window mits = do
+    widgetDestroy window
+    let range = 1 + noterange mits
+    newnote <- rollNote range
+    options <- genoptions newnote range
+    loopy $ MITS ("It was " ++ toNote (notenum mits) ++ ". Now try this one ;)") newnote options range
