@@ -46,15 +46,14 @@ octaveNote :: Integral a => a -> a
 octaveNote n = (n+57) `div` 12
 
 toNote :: (Integral a, Show a) => a -> String
-toNote n = (nameNote n) ++ " " ++ (show (octaveNote n))
+toNote n = nameNote n ++ " " ++ show (octaveNote n)
 
 
 main :: IO ()
 main = withProgNameAndArgs runALUT alutmain
 
 alutmain :: String -> [String] -> IO ()
-alutmain _progName _args = initGUI >> do
-    loopy "Welcome to MusicIT! Guess the note ;)"
+alutmain _progName _args = initGUI >> loopy "Welcome to MusicIT! Guess the note ;)"
 
 loopy :: String -> IO ()
 loopy labeltext = do
@@ -68,6 +67,9 @@ loopy labeltext = do
     
     note <- rollNote
     
+    rb <- builderGetObject builder castToButton "replay_button"
+    _ <- onClicked rb $ playTone 0.2 . freq $ note
+    
     b1 <- builderGetObject builder castToButton "button1"
     b2 <- builderGetObject builder castToButton "button2"
     b3 <- builderGetObject builder castToButton "button3"
@@ -80,18 +82,18 @@ loopy labeltext = do
     b10 <- builderGetObject builder castToButton "button10"
     b11 <- builderGetObject builder castToButton "button11"
     b12 <- builderGetObject builder castToButton "button12"
-    buttonSetLabel b1 $ toNote (-9)
-    buttonSetLabel b2 $ toNote (-8)
-    buttonSetLabel b3 $ toNote (-7)
-    buttonSetLabel b4 $ toNote (-6)
-    buttonSetLabel b5 $ toNote (-5)
-    buttonSetLabel b6 $ toNote (-4)
-    buttonSetLabel b7 $ toNote (-3)
-    buttonSetLabel b8 $ toNote (-2)
-    buttonSetLabel b9 $ toNote (-1)
-    buttonSetLabel b10 $ toNote 0
-    buttonSetLabel b11 $ toNote 1
-    buttonSetLabel b12 $ toNote 2
+    buttonSetLabel b1 $ toNote ((-9) :: Int)
+    buttonSetLabel b2 $ toNote ((-8) :: Int)
+    buttonSetLabel b3 $ toNote ((-7) :: Int)
+    buttonSetLabel b4 $ toNote ((-6) :: Int)
+    buttonSetLabel b5 $ toNote ((-5) :: Int)
+    buttonSetLabel b6 $ toNote ((-4) :: Int)
+    buttonSetLabel b7 $ toNote ((-3) :: Int)
+    buttonSetLabel b8 $ toNote ((-2) :: Int)
+    buttonSetLabel b9 $ toNote ((-1) :: Int)
+    buttonSetLabel b10 $ toNote (0 :: Int)
+    buttonSetLabel b11 $ toNote (1 :: Int)
+    buttonSetLabel b12 $ toNote (2 :: Int)
     _ <- onClicked b1 $ buttonClick window (-9) note 
     _ <- onClicked b2 $ buttonClick window (-8) note 
     _ <- onClicked b3 $ buttonClick window (-7) note 
@@ -107,13 +109,13 @@ loopy labeltext = do
     
     widgetShowAll window
     
-    playTone 0.5 . freq $ note
+    playTone 0.2 . freq $ note
     
     mainGUI
 
 buttonClick :: (Integral a, Show a) => Window -> a -> a -> IO ()
 buttonClick window note expected = do
     widgetDestroy window
-    if note == expected then loopy $ "That is correct! It was "++(toNote expected)++". Now try this one ;)"
-                        else loopy $ "Wrong... It was "++(toNote expected)++". Better luck with this one!" 
+    loopy $ if note == expected then "That is correct! It was " ++ toNote expected ++ ". Now try this one ;)"
+                                else "Wrong... It was " ++ toNote expected ++ ". Better luck with this one!" 
 
