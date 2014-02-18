@@ -27,12 +27,15 @@ playTone dur hz = do
    play [source]
    sleep 1
 
-roll :: Random a => a -> a -> IO a
-roll f l = getStdRandom (randomR (f,l))
+roll :: Random a => (a, a) -> IO a
+roll = getStdRandom .randomR
+
+rangeToInterval :: Int -> (Note, Note)
+rangeToInterval range = (base, base+range)
+  where base = -(range `div` 2)
 
 rollNote :: Int -> IO Note
-rollNote range = roll base $ base+range
-  where base = -(range `div` 2)
+rollNote = roll . rangeToInterval
 
 nameNote :: Note -> String
 nameNote (-9) = "Dó"
@@ -59,12 +62,14 @@ data MITS = MITS { labeltext :: String, notenum :: Note, noteoptions :: [Maybe N
 
 
 genoptions :: Note -> Int -> IO [Maybe Note]
-genoptions note range = do
-  let fr = if range > 11 then 11 else range
-  base <- roll (note - fr) note
-  let final = base + fr
-      list = map Just [base .. final]
-  return $ list ++ replicate (12 - length list) Nothing 
+genoptions note range
+  | range <= 11 = do let (f,l) = rangeToInterval range
+                         list = map Just [f..l]
+                     return $ list ++ replicate (12 - length list) Nothing 
+  | otherwise = do base <- curry roll (note - 11) note
+                   return $ map Just [base .. base + 11]
+
+
 
 main :: IO ()
 main = withProgNameAndArgs runALUT $ \_progName _args -> initGUI >> do
