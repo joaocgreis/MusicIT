@@ -65,7 +65,7 @@ genoptions :: Note -> Int -> IO [Maybe Note]
 genoptions note range
   | range <= 11 = do let (f,l) = rangeToInterval range
                          list = map Just [f..l]
-                     return $ list ++ replicate (12 - length list) Nothing 
+                     return $ until ((==12).length) (++[Nothing]) list
   | otherwise = do base <- curry roll (note - 11) note
                    return $ map Just [base .. base + 11]
 
@@ -73,9 +73,9 @@ genoptions note range
 
 main :: IO ()
 main = withProgNameAndArgs runALUT $ \_progName _args -> initGUI >> do
-  mapM_ (playTone 0.2 . freq) [-9, -7, -5, -4, -2, 0, 2, 3]
+  mapM_ (playTone 0.1 . freq) [-9, -7, -5, -4, -2, 0, 2, 3]
   options <- genoptions 0 0
-  loopy (MITS "Welcome to MusicIT! Guess the note ;)" 0 options 0)
+  loopy (MITS (toNote 0) 0 options 0)
 
 loopy :: MITS -> IO ()
 loopy mits = do
@@ -88,7 +88,10 @@ loopy mits = do
     labelSetText l $ labeltext mits
     
     rb <- builderGetObject builder castToButton "replay_button"
-    _ <- onClicked rb $ playTone 0.2 . freq $ notenum mits
+    _ <- onClicked rb $ playTone 0.5 . freq $ notenum mits
+    
+    nnb <- builderGetObject builder castToButton "new_note_button"
+    _ <- onClicked nnb $ newNoteClick window mits
     
     b1 <- builderGetObject builder castToButton "button1"
     b2 <- builderGetObject builder castToButton "button2"
@@ -145,13 +148,26 @@ setButtonNoteClick :: Window -> Button -> Int -> MITS -> IO ()
 setButtonNoteClick window button number mits = do
   _ <- onClicked button $ if (noteoptions mits !! number) == Just (notenum mits)
     then buttonClick window mits
-    else buttonSetLabel button "X_X" >> playTone 0.2 (freq (notenum mits))
+    else buttonSetLabel button "X_X" -- >> playTone 0.2 (freq (notenum mits))
   return ()
 
 buttonClick :: Window -> MITS -> IO ()
 buttonClick window mits = do
     widgetDestroy window
-    let range = 1 + noterange mits
+    let range = noterange mits
     newnote <- rollNote range
     options <- genoptions newnote range
-    loopy $ MITS ("It was " ++ toNote (notenum mits) ++ ". Now try this one ;)") newnote options range
+    loopy $ MITS (labeltext mits) newnote options range
+
+describeRange :: Int -> String
+describeRange range = let (f,l) = rangeToInterval range
+                     in toNote f ++ " <-> " ++ toNote l
+
+newNoteClick :: Window -> MITS -> IO ()
+newNoteClick window mits = do
+    widgetDestroy window
+    let range = 1 + noterange mits
+        newnote = notenum mits
+    options <- genoptions newnote range
+    loopy $ MITS (describeRange range) newnote options range
+    
