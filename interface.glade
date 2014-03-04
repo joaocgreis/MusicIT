@@ -16,7 +16,7 @@
             <property name="border_width">10</property>
             <child>
               <object class="GtkButton" id="new_note_button">
-                <property name="label" translatable="yes">New Note</property>
+                <property name="label" translatable="yes">Adicionar Nota</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
@@ -43,7 +43,7 @@
             </child>
             <child>
               <object class="GtkButton" id="replay_button">
-                <property name="label" translatable="yes">Replay</property>
+                <property name="label" translatable="yes">Repetir</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>

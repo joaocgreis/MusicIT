@@ -25,7 +25,7 @@ playTone dur hz = do
    [source] <- genObjectNames 1
    buffer source $= Just buf
    play [source]
-   sleep 1
+   sleep dur
 
 roll :: Random a => (a, a) -> IO a
 roll = getStdRandom .randomR
@@ -73,7 +73,8 @@ genoptions note range
 
 main :: IO ()
 main = withProgNameAndArgs runALUT $ \_progName _args -> initGUI >> do
-  mapM_ (playTone 0.1 . freq) [-9, -7, -5, -4, -2, 0, 2, 3]
+  mapM_ (playTone 0.2 . freq) [-9, -7, -5, -4, -2, 0, 2, 3]
+  sleep 1
   options <- genoptions 0 0
   loopy (MITS (toNote 0) 0 options 0)
 
@@ -93,42 +94,9 @@ loopy mits = do
     nnb <- builderGetObject builder castToButton "new_note_button"
     _ <- onClicked nnb $ newNoteClick window mits
     
-    b1 <- builderGetObject builder castToButton "button1"
-    b2 <- builderGetObject builder castToButton "button2"
-    b3 <- builderGetObject builder castToButton "button3"
-    b4 <- builderGetObject builder castToButton "button4"
-    b5 <- builderGetObject builder castToButton "button5"
-    b6 <- builderGetObject builder castToButton "button6"
-    b7 <- builderGetObject builder castToButton "button7"
-    b8 <- builderGetObject builder castToButton "button8"
-    b9 <- builderGetObject builder castToButton "button9"
-    b10 <- builderGetObject builder castToButton "button10"
-    b11 <- builderGetObject builder castToButton "button11"
-    b12 <- builderGetObject builder castToButton "button12"
-    setButtonNoteLabel b1 0 mits
-    setButtonNoteLabel b2 1 mits
-    setButtonNoteLabel b3 2 mits
-    setButtonNoteLabel b4 3 mits
-    setButtonNoteLabel b5 4 mits
-    setButtonNoteLabel b6 5 mits
-    setButtonNoteLabel b7 6 mits
-    setButtonNoteLabel b8 7 mits
-    setButtonNoteLabel b9 8 mits
-    setButtonNoteLabel b10 9 mits
-    setButtonNoteLabel b11 10 mits
-    setButtonNoteLabel b12 11 mits
-    setButtonNoteClick window b1 0 mits
-    setButtonNoteClick window b2 1 mits
-    setButtonNoteClick window b3 2 mits
-    setButtonNoteClick window b4 3 mits
-    setButtonNoteClick window b5 4 mits
-    setButtonNoteClick window b6 5 mits
-    setButtonNoteClick window b7 6 mits
-    setButtonNoteClick window b8 7 mits
-    setButtonNoteClick window b9 8 mits
-    setButtonNoteClick window b10 9 mits
-    setButtonNoteClick window b11 10 mits
-    setButtonNoteClick window b12 11 mits
+    mapM_ (\x -> do b <- builderGetObject builder castToButton ("button" ++ show (x + 1))
+                    setButtonNoteLabel b x mits
+                    setButtonNoteClick window b x mits) [0..11]
     
     widgetShowAll window
     
