@@ -19,11 +19,16 @@ freq :: Note -> Frequency
 freq n = fA4 * (1.059463094359 ^^ n)
 
 
-playTone :: Duration -> Frequency -> IO ()
-playTone dur hz = do
+getSource :: Duration -> Frequency -> IO Source
+getSource dur hz = do
    buf <- createBuffer (Sine hz 0 dur)
    [source] <- genObjectNames 1
    buffer source $= Just buf
+   return source
+
+playTone :: Duration -> Frequency -> IO ()
+playTone dur hz = do
+   source <- getSource dur hz
    play [source]
    sleep dur
 
